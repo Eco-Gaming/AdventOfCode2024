@@ -18,6 +18,7 @@ private fun readInputFromFile(filePath: String): String {
 private fun getMulList(mulString: String): List<String> {
     val mulList = mutableListOf<String>()
 
+    var dontIndex = mulString.indexOf("don't()")
     var i = 0
     while (i < mulString.length) {
         val startIndex = mulString.indexOf("mul(", i)
@@ -26,13 +27,20 @@ private fun getMulList(mulString: String): List<String> {
         val bracketIndex = mulString.indexOf(')', startIndex)
         if (bracketIndex == -1) break
 
-        val extractedString = mulString.substring(startIndex, bracketIndex + 1)
+        if (dontIndex in 0..startIndex) {
+            i = mulString.indexOf("do()", i)
+            if (i == -1) break
+            dontIndex = mulString.indexOf("don't()", i + 1)
+            continue
+        }
 
         // if the found match is longer than mul(XXX,XXX)
         if (bracketIndex > startIndex + 11) {
             i = startIndex + 1
             continue
         }
+
+        val extractedString = mulString.substring(startIndex, bracketIndex + 1)
 
         if (validateString(extractedString)) mulList.add(extractedString)
 
@@ -46,7 +54,7 @@ private fun validateString(str: String): Boolean {
     val strArr = str.substring(4, str.length - 1).split(",")
     if (strArr.size != 2) return false
     if (strArr.none { it.any { char -> char.isDigit() } } ||
-        strArr[0].isEmpty() || strArr[0].length > 3 || strArr[1].isEmpty() || strArr[1].length > 3) return false
+        strArr[0].length !in 0 .. 3 || strArr[1].length !in 0 .. 3) return false
     return true
 }
 
