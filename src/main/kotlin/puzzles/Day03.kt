@@ -1,21 +1,33 @@
-package me.eco_gaming.day03
+package me.eco_gaming.puzzles
 
-import java.io.BufferedReader
-import java.io.File
+import me.eco_gaming.Puzzle
+import me.eco_gaming.readInputFromFile
 
 fun main() {
-    val input = readInputFromFile("src/main/resources/day03.txt")
-    val mulList = getMulList(input)
-    val sum = calcSum(mulList)
-    println(sum)
+    val day03 = Day03()
+    day03.solve()
 }
 
-private fun readInputFromFile(filePath: String): String {
-    val bufferedReader: BufferedReader = File(filePath).bufferedReader()
-    return bufferedReader.use { it.readText() }
+class Day03 : Puzzle {
+
+    private lateinit var input: String
+
+    override fun readFile() {
+        input = readInputFromFile("src/main/resources/day03.txt")
+    }
+
+    override fun solvePartOne(): String {
+        val mulList = getMulList(input)
+        return calcSum(mulList).toString()
+    }
+
+    override fun solvePartTwo(): String {
+        val mulList = getMulList(input, true)
+        return calcSum(mulList).toString()
+    }
 }
 
-private fun getMulList(mulString: String): List<String> {
+private fun getMulList(mulString: String, respectDoAndDont: Boolean = false): List<String> {
     val mulList = mutableListOf<String>()
 
     var dontIndex = mulString.indexOf("don't()")
@@ -27,7 +39,7 @@ private fun getMulList(mulString: String): List<String> {
         val bracketIndex = mulString.indexOf(')', startIndex)
         if (bracketIndex == -1) break
 
-        if (dontIndex in 0..startIndex) {
+        if (respectDoAndDont && dontIndex in 0..startIndex) {
             i = mulString.indexOf("do()", i)
             if (i == -1) break
             dontIndex = mulString.indexOf("don't()", i + 1)

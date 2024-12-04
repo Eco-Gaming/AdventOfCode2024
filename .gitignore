@@ -38,4 +38,4 @@ build/
 .DS_Store
 
 ### resources ###
-src/main/resources/day03.txt
+src/main/resources/day*.txt
