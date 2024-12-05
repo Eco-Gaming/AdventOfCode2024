@@ -36,30 +36,50 @@ class Day05 : Puzzle {
     }
 
     override fun solvePartOne(): String {
-        var sum = 0
-        lines@ for (line in inputList) {
-            for (rule in ruleMap.keys) {
-                if (line.contains(rule)) {
-                    val index = line.indexOf(rule)
-                    val compliant = ruleMap[rule]?.all { value ->
-                        if (line.contains(value)) {
-                            line.indexOf(value) > index
-                        } else {
-                            true
-                        }
-                    }
-                    if (!compliant!!) {
-                        continue@lines
-                    }
-                }
-            }
-            val middlePageNumber = line[(line.size - 1) / 2]
-            sum += middlePageNumber
-        }
-        return sum.toString()
+        return calcSum().toString()
     }
 
     override fun solvePartTwo(): String {
-        TODO("Not yet implemented")
+        return (calcSum(fixLines = true) - calcSum()).toString()
+    }
+
+    private fun calcSum(fixLines: Boolean = false): Int {
+        var sum = 0
+        lines@ for (line in inputList) {
+            var lineVar = line
+            for (rule in ruleMap.keys) {
+                if (lineVar.contains(rule)) {
+                    if (!isCompliant(lineVar, rule)) {
+                        if (!fixLines) continue@lines
+                        lineVar = fixLine(lineVar, rule)
+                    }
+                }
+            }
+            val middlePageNumber = lineVar[(lineVar.size - 1) / 2]
+            sum += middlePageNumber
+        }
+        return sum
+    }
+
+    private fun isCompliant(line: List<Int>, rule: Int): Boolean {
+        val index = line.indexOf(rule)
+        return ruleMap[rule]?.all { value ->
+            if (line.contains(value)) {
+                line.indexOf(value) > index
+            } else {
+                true
+            }
+        } == true
+    }
+
+    private fun fixLine(line: List<Int>, rule: Int): List<Int> {
+        val lineVar = line.toMutableList()
+        while (!isCompliant(lineVar, rule) && lineVar.indexOf(rule) > 0) {
+            val index = lineVar.indexOf(rule)
+            val temp = lineVar[index - 1]
+            lineVar[index - 1] = lineVar[index]
+            lineVar[index] = temp
+        }
+        return lineVar
     }
 }
