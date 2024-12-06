@@ -45,32 +45,71 @@ class Day06 : Puzzle {
     }
 
     override fun solvePartOne(): String {
-        val positions = ArrayList<Pair<Int, Int>>()
-        positions.add(Pair(guardPosition.x, guardPosition.y))
-        while (guardPosition.x in matrix.indices && guardPosition.y in matrix[0].indices) {
-            val next = arrayOf(guardPosition.x, guardPosition.y)
-            when (guardPosition.facing) {
-                Facing.NORTH -> next[0]--
-                Facing.EAST -> next[1]++
-                Facing.SOUTH -> next[0]++
-                Facing.WEST -> next[1]--
-            }
-            try {
-                if (!matrix[next[0]][next[1]]) {
-                    guardPosition.x = next[0]
-                    guardPosition.y = next[1]
-                    positions.add(Pair(next[0], next[1]))
-                } else {
-                    guardPosition.facing = guardPosition.facing.rotateClockwise()
-                }
-            } catch (e: IndexOutOfBoundsException) {
-                break
-            }
-        }
-        return positions.distinct().size.toString()
+        return getGuardPositions(matrix).distinct().size.toString()
     }
 
     override fun solvePartTwo(): String {
-        TODO("Not yet implemented")
+        return partTwoBruteForce()
+
+        // NONE OF THIS WORKS, USE BRUTEFORCE INSTEAD!
+
+        // if turn + step == a previous guard position:
+        // distinct list.add(turn.normalNextStep)
+        val guardPositions = getGuardPositions(matrix)
+        val previousGuardPositions = ArrayList<GuardPosition>()
+        val objectPositions = ArrayList<GuardPosition>()
+        for (position in guardPositions) {
+            val newPosition = GuardPosition(position.x, position.y, position.facing.rotateClockwise())
+            // if we cross a path that we've been on before
+            if (previousGuardPositions.any { it.fullEquals(newPosition) }) {
+                objectPositions.add(getObjectPos(position))
+            } else { // if we can get on our old path by using a new path
+                val newNewPosition = GuardPosition(newPosition.x, newPosition.y, newPosition.facing)
+                // if we rotate, and can then go straight till we reach a previous path, we can take the base point + rotate CCW + step
+                while (newNewPosition.facing == newPosition.facing && newNewPosition.x >= 0) {
+                    newNewPosition.step(matrix)
+                }
+                if (previousGuardPositions.any { it.fullEquals(newNewPosition) }) {
+                    val objectPos = GuardPosition(position.x, position.y, position.facing)
+                    objectPositions.add(getObjectPos(objectPos))
+                }
+            }
+            previousGuardPositions.add(position)
+        }
+        return objectPositions.distinct().size.toString()
+    }
+
+    private fun getGuardPositions(pMatrix: List<List<Boolean>>): List<GuardPosition> {
+        val positions = ArrayList<GuardPosition>()
+        val newGuardPosition = GuardPosition(guardPosition.x, guardPosition.y, guardPosition.facing)
+        while (newGuardPosition.x in pMatrix.indices && newGuardPosition.y in pMatrix[0].indices) {
+            // return an empty list if we got into an endless loop
+            if (positions.any { it.fullEquals(newGuardPosition) }) return listOf()
+            positions.add(GuardPosition(newGuardPosition.x, newGuardPosition.y, newGuardPosition.facing))
+            newGuardPosition.step(pMatrix)
+        }
+        return positions
+    }
+
+    private fun getObjectPos(position: GuardPosition): GuardPosition {
+        val objectPos = GuardPosition(position.x, position.y, position.facing)
+        objectPos.step(matrix)
+        return objectPos
+    }
+
+    private fun partTwoBruteForce(): String {
+        var sum = 0
+        for (i in matrix.indices) {
+            for (j in matrix[i].indices) {
+                if (!matrix[i][j]) {
+                    println("Iteration " + (i * matrix[0].size + j) + "/" + (matrix.size * matrix[0].size))
+                    val matrixCopy = matrix.map { it.toMutableList() }.toList()
+                    matrixCopy[i][j] = true
+                    val positions = getGuardPositions(matrixCopy)
+                    if (positions.isEmpty()) sum++
+                }
+            }
+        }
+        return sum.toString()
     }
 }
