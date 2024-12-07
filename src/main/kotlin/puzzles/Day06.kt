@@ -49,18 +49,42 @@ class Day06 : Puzzle {
     }
 
     override fun solvePartTwo(): String {
-        val verbose = false // whether to show iteration progress
-        // (mostly) brute force for the win
+        // if turn + step == a previous guard position:
+        // distinct list.add(turn.normalNextStep)
         val guardPositions = getGuardPositions(matrix)
+        val previousGuardPositions = ArrayList<GuardPosition>()
         val objectPositions = ArrayList<GuardPosition>()
         for ((i, position) in guardPositions.withIndex()) {
-            if (verbose) println("Iteration ${i + 1}/${guardPositions.size}")
-            val objectPosition = getObjectPos(position)
-            val newMatrix = matrix.map { it.toMutableList() }.toList()
-            if (objectPosition.x == -1 || objectPosition.y == -1) continue
-            newMatrix[objectPosition.x][objectPosition.y] = true
-            if (getGuardPositions(newMatrix).isEmpty()) objectPositions.add(objectPosition)
+            val positionRotated = GuardPosition(position.x, position.y, position.facing.rotateClockwise())
+            // if we cross a path that we've been on before
+            if (previousGuardPositions.contains(positionRotated)) {
+                objectPositions.add(getObjectPos(position))
+            } else { // if we can get on our old path by using a new path
+                val newMatrix = matrix.map { it.toMutableList() }.toList()
+                val newObjectPosition = getObjectPos(position)
+                if (newObjectPosition.x == -1 || newObjectPosition.y == -1) continue
+                newMatrix[newObjectPosition.x][newObjectPosition.y] = true
+
+                val newPositionList = getGuardPositions(newMatrix, positionRotated)
+                // if newPosition results in an endless loop
+                // OR if newPositionList has exact matches with our previous path
+                // BUT that won't just result in reaching the end
+                val overlapPositions = newPositionList.filter { newPos ->
+                    previousGuardPositions.contains(newPos)
+                }
+                // if the index of the overlap position is smaller than the index where we broke out of the list,
+                // it means we have found a contender for a new object
+                val willResultInLoop = overlapPositions.any { overlapPos ->
+                    previousGuardPositions.indexOf(overlapPos) < i
+                }
+                if (newPositionList.isEmpty() || willResultInLoop) {
+                    val objectPos = GuardPosition(position.x, position.y, position.facing)
+                    objectPositions.add(getObjectPos(objectPos))
+                }
+            }
+            previousGuardPositions.add(position)
         }
+        objectPositions.filter { it.x in matrix.indices && it.y in matrix[0].indices }
         return objectPositions.distinctBy { Pair(it.x, it.y) }.size.toString()
     }
 
