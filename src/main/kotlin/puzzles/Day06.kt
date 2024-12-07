@@ -45,46 +45,31 @@ class Day06 : Puzzle {
     }
 
     override fun solvePartOne(): String {
-        return getGuardPositions(matrix).distinct().size.toString()
+        return getGuardPositions(matrix).distinctBy { Pair(it.x, it.y) }.size.toString()
     }
 
     override fun solvePartTwo(): String {
-        return partTwoBruteForce()
-
-        // NONE OF THIS WORKS, USE BRUTEFORCE INSTEAD!
-
-        // if turn + step == a previous guard position:
-        // distinct list.add(turn.normalNextStep)
+        val verbose = false // whether to show iteration progress
+        // (mostly) brute force for the win
         val guardPositions = getGuardPositions(matrix)
-        val previousGuardPositions = ArrayList<GuardPosition>()
         val objectPositions = ArrayList<GuardPosition>()
-        for (position in guardPositions) {
-            val newPosition = GuardPosition(position.x, position.y, position.facing.rotateClockwise())
-            // if we cross a path that we've been on before
-            if (previousGuardPositions.any { it.fullEquals(newPosition) }) {
-                objectPositions.add(getObjectPos(position))
-            } else { // if we can get on our old path by using a new path
-                val newNewPosition = GuardPosition(newPosition.x, newPosition.y, newPosition.facing)
-                // if we rotate, and can then go straight till we reach a previous path, we can take the base point + rotate CCW + step
-                while (newNewPosition.facing == newPosition.facing && newNewPosition.x >= 0) {
-                    newNewPosition.step(matrix)
-                }
-                if (previousGuardPositions.any { it.fullEquals(newNewPosition) }) {
-                    val objectPos = GuardPosition(position.x, position.y, position.facing)
-                    objectPositions.add(getObjectPos(objectPos))
-                }
-            }
-            previousGuardPositions.add(position)
+        for ((i, position) in guardPositions.withIndex()) {
+            if (verbose) println("Iteration ${i + 1}/${guardPositions.size}")
+            val objectPosition = getObjectPos(position)
+            val newMatrix = matrix.map { it.toMutableList() }.toList()
+            if (objectPosition.x == -1 || objectPosition.y == -1) continue
+            newMatrix[objectPosition.x][objectPosition.y] = true
+            if (getGuardPositions(newMatrix).isEmpty()) objectPositions.add(objectPosition)
         }
-        return objectPositions.distinct().size.toString()
+        return objectPositions.distinctBy { Pair(it.x, it.y) }.size.toString()
     }
 
-    private fun getGuardPositions(pMatrix: List<List<Boolean>>): List<GuardPosition> {
+    private fun getGuardPositions(pMatrix: List<List<Boolean>>, startPosition: GuardPosition = guardPosition): List<GuardPosition> {
         val positions = ArrayList<GuardPosition>()
-        val newGuardPosition = GuardPosition(guardPosition.x, guardPosition.y, guardPosition.facing)
+        val newGuardPosition = GuardPosition(startPosition.x, startPosition.y, startPosition.facing)
         while (newGuardPosition.x in pMatrix.indices && newGuardPosition.y in pMatrix[0].indices) {
             // return an empty list if we got into an endless loop
-            if (positions.any { it.fullEquals(newGuardPosition) }) return listOf()
+            if (positions.contains(newGuardPosition)) return listOf()
             positions.add(GuardPosition(newGuardPosition.x, newGuardPosition.y, newGuardPosition.facing))
             newGuardPosition.step(pMatrix)
         }
@@ -95,21 +80,5 @@ class Day06 : Puzzle {
         val objectPos = GuardPosition(position.x, position.y, position.facing)
         objectPos.step(matrix)
         return objectPos
-    }
-
-    private fun partTwoBruteForce(): String {
-        var sum = 0
-        for (i in matrix.indices) {
-            for (j in matrix[i].indices) {
-                if (!matrix[i][j]) {
-                    println("Iteration " + (i * matrix[0].size + j) + "/" + (matrix.size * matrix[0].size))
-                    val matrixCopy = matrix.map { it.toMutableList() }.toList()
-                    matrixCopy[i][j] = true
-                    val positions = getGuardPositions(matrixCopy)
-                    if (positions.isEmpty()) sum++
-                }
-            }
-        }
-        return sum.toString()
     }
 }

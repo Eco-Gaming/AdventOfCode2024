@@ -46,22 +46,15 @@ class GuardPosition(var x: Int, var y: Int, var facing: Facing) {
         }
     }
 
-    fun fullEquals(other: Any?): Boolean {
+    override fun equals(other: Any?): Boolean {
         return when (other) {
             is GuardPosition -> this.x == other.x && this.y == other.y && this.facing == other.facing
             else -> false
         }
     }
 
-    override fun equals(other: Any?): Boolean {
-        return when (other) {
-            is GuardPosition -> this.x == other.x && this.y == other.y
-            else -> false
-        }
-    }
-
     override fun hashCode(): Int {
-        return Objects.hash(x, y)
+        return Objects.hash(x, y, facing)
     }
 }
 
