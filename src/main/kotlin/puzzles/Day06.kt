@@ -49,17 +49,17 @@ class Day06 : Puzzle {
     }
 
     override fun solvePartTwo(): String {
-        val verbose = false // whether to show iteration progress
         // (mostly) brute force for the win
         val guardPositions = getGuardPositions(matrix)
         val objectPositions = ArrayList<GuardPosition>()
-        for ((i, position) in guardPositions.withIndex()) {
-            if (verbose) println("Iteration ${i + 1}/${guardPositions.size}")
+        guardPositions.parallelStream().forEach { position ->
             val objectPosition = getObjectPos(position)
             val newMatrix = matrix.map { it.toMutableList() }.toList()
-            if (objectPosition.x == -1 || objectPosition.y == -1) continue
+            if (objectPosition.x == -1 || objectPosition.y == -1) return@forEach
             newMatrix[objectPosition.x][objectPosition.y] = true
-            if (getGuardPositions(newMatrix).isEmpty()) objectPositions.add(objectPosition)
+            if (getGuardPositions(newMatrix).isEmpty()) synchronized(objectPositions) {
+                objectPositions.add(objectPosition)
+            }
         }
         return objectPositions.distinctBy { Pair(it.x, it.y) }.size.toString()
     }
