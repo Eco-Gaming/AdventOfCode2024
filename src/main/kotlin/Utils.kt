@@ -64,3 +64,7 @@ class GuardPosition(var x: Int, var y: Int, var facing: Facing) {
         return Objects.hash(x, y)
     }
 }
+
+enum class Operator {
+    PLUS, TIMES, CONCAT
+}

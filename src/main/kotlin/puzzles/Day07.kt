@@ -1,5 +1,6 @@
 package me.eco_gaming.puzzles
 
+import me.eco_gaming.Operator
 import me.eco_gaming.Puzzle
 import me.eco_gaming.readInputFromFile
 
@@ -26,29 +27,46 @@ class Day07 : Puzzle {
 
     override fun solvePartOne(): String {
         var sum: Long = 0
+        val operators = listOf(Operator.PLUS, Operator.TIMES)
         for (equation in equations) {
-            if (isSolvable(equation.first, equation.second)) {
+            if (isSolvable(equation.first, equation.second, operators)) {
                 sum += equation.first
             }
         }
         return sum.toString()
     }
 
-    private fun isSolvable(result: Long, list: List<Long>): Boolean {
+    override fun solvePartTwo(): String {
+        var sum: Long = 0
+        val operators = listOf(Operator.PLUS, Operator.TIMES, Operator.CONCAT)
+        for (equation in equations) {
+            if (isSolvable(equation.first, equation.second, operators)) {
+                sum += equation.first
+            }
+        }
+        return sum.toString()
+    }
+
+    private fun isSolvable(result: Long, list: List<Long>, operators: List<Operator>): Boolean {
         val lastElement = list.last()
 
         if (list.size == 1) {
             return lastElement == result
         }
 
-        val canDivide = result.isDivisibleBy(lastElement)
-        val canSubtract = result - lastElement > 0
+        val canDivide = operators.contains(Operator.TIMES) && result.isDivisibleBy(lastElement)
+        val canSubtract = operators.contains(Operator.PLUS) && result - lastElement > 0
+        val canSplit = operators.contains(Operator.CONCAT) && result > lastElement
+        val splitResult = if (canSplit) {
+            var splitLength = 10L
+            while (splitLength <= lastElement) splitLength *= 10L
+            if (result % splitLength == lastElement) result / splitLength else null
+        } else {
+            null
+        }
 
-        return (canDivide && isSolvable(result / lastElement, list.dropLast(1))) ||
-                (canSubtract && isSolvable(result - lastElement, list.dropLast(1)))
-    }
-
-    override fun solvePartTwo(): String {
-        TODO("Not yet implemented")
+        return (canDivide && isSolvable(result / lastElement, list.dropLast(1), operators)) ||
+                (canSubtract && isSolvable(result - lastElement, list.dropLast(1), operators)) ||
+                (splitResult != null && isSolvable(splitResult, list.dropLast(1), operators))
     }
 }
