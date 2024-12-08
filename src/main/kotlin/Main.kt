@@ -11,6 +11,7 @@ fun main() {
         Day05(),
         Day06(),
         Day07(),
+        Day08(),
     )
 
     for (puzzle in puzzles) {
