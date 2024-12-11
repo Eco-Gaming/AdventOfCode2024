@@ -2,8 +2,6 @@ package me.eco_gaming.puzzles
 
 import me.eco_gaming.Puzzle
 import me.eco_gaming.readInputFromFile
-import kotlin.math.floor
-import kotlin.math.log10
 import kotlin.math.pow
 
 fun main() {
@@ -25,44 +23,43 @@ class Day11 : Puzzle {
     }
 
     override fun solvePartTwo(): String {
-        // return getList(75).size.toString()
-        return ""
+        return getList(75).size.toString()
     }
 
     private fun getList(iterations: Int): List<Long> {
-        val input = inputList.toMutableList()
-        val output = ArrayList<Long>()
-        for (j in 0..<iterations) {
-            for (num in input) {
-                val digits = countDigits(num)
-                if (num == 0L) {
-                    output.add(1)
-                } else if (digits % 2 == 0L) {
-                    val left = num / 10.0.pow(digits / 2.0).toInt()
-                    val right = num % 10.0.pow(digits / 2.0).toInt()
-                    output.add(left)
-                    output.add(right)
+        // (stone, iterations left), resulting stones
+        val cache = HashMap<Pair<Long, Int>, List<Long>>()
+        val list = ArrayList<Long>()
+        for (stone in inputList) {
+            list.addAll(expandStone(stone, iterations, cache))
+        }
+        return list
+    }
+
+    private fun expandStone(stone: Long, iterations: Int, cacheMap: HashMap<Pair<Long, Int>, List<Long>>): List<Long> {
+        if (iterations == 0) return listOf(stone)
+
+        val cache = cacheMap[Pair(stone, iterations)]
+        if (cache != null) return cache
+
+        val result = when (stone) {
+            0L -> expandStone(1, iterations - 1, cacheMap)
+            else -> {
+                val digits = countDigits(stone)
+                if (digits % 2 == 0L) {
+                    val left = stone / 10.0.pow(digits / 2.0).toInt()
+                    val right = stone % 10.0.pow(digits / 2.0).toInt()
+                    expandStone(left, iterations - 1, cacheMap) + expandStone(right, iterations - 1, cacheMap)
                 } else {
-                    output.add(num * 2024)
+                    expandStone(stone * 2024, iterations - 1, cacheMap)
                 }
             }
-            input.clear()
-            input.addAll(output)
-            output.clear()
         }
-        return input
+        cacheMap[Pair(stone, iterations)] = result
+        return result
     }
 
     private fun countDigits(input: Long): Long {
-
-        return floor( log10( input.toDouble() ) ).toLong() + 1;
-
-        var n = 1L
-        var num = input
-        if ( num >= 100000000 ) { n += 8; num /= 100000000; }
-        if ( num >= 10000     ) { n += 4; num /= 10000; }
-        if ( num >= 100       ) { n += 2; num /= 100; }
-        if ( num >= 10        ) { n += 1; }
-        return n
+        return input.toString().length.toLong()
     }
 }
