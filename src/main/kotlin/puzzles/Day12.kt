@@ -23,8 +23,22 @@ fun Point.getNeighbors(matrix: List<List<Char>>): List<Point> {
     return list
 }
 
+fun Point.getAllNeighbors(): List<Point> {
+    return listOf(
+        Point(x, y + 1),
+        Point(x, y - 1),
+        Point(x + 1, y),
+        Point(x - 1, y),
+        Point(x + 1, y + 1),
+        Point(x + 1, y - 1),
+        Point(x - 1, y + 1),
+        Point(x - 1, y - 1),
+    )
+}
+
 fun Point.getValue(matrix: List<List<Char>>): Char {
-    return matrix[x][y]
+    if (x in matrix.indices && y in matrix[x].indices) return matrix[x][y]
+    return 0.toChar()
 }
 
 fun Point.getForeignEdgeCount(matrix: List<List<Char>>): Int {
@@ -121,6 +135,44 @@ class Day12 : Puzzle {
     }
 
     override fun solvePartTwo(): String {
-        return ""
+        val entries = calculateRegions()
+        val price = calculateFencePricePartTwo(entries)
+        return price.toString()
+    }
+
+    private fun calculateFencePricePartTwo(entries: List<ListEntry>): Long {
+        var sum = 0L
+        for (entry in entries) {
+            val corners = countCorners(entry)
+            sum += entry.area * corners
+        }
+        return sum
+    }
+
+    // A corner is where a 2x2 grid contains one/three in-shape points,
+    // or two diagonally-opposite cells.
+    // idea from: https://programming.dev/post/22749375/13849136
+    private fun countCorners(entry: ListEntry): Int {
+        var corners = 0
+        val borders = mutableListOf<Point>()
+        entry.points.forEach { point -> // add all points with neighbors + diagonal neighbors
+            borders.add(point)
+            borders.addAll(point.getAllNeighbors())
+        }
+        for (cell in borders.distinct()) {
+            // look at a 2x2 grid
+            val cells = listOf(
+                Point(cell.x, cell.y),
+                Point(cell.x, cell.y + 1),
+                Point(cell.x + 1, cell.y),
+                Point(cell.x + 1, cell.y + 1),
+            ).map { entry.points.contains(it) }
+            if (cells.count { it } % 2 == 1) { // 1 or 3 correct points
+                corners++
+            } else if (cells == listOf(true, false, false, true) || cells == listOf(false, true, true, false)) { // 2 diagonally opposite points
+                corners += 2
+            }
+        }
+        return corners
     }
 }
