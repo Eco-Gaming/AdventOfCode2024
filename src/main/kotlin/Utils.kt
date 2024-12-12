@@ -1,5 +1,6 @@
 package me.eco_gaming
 
+import java.awt.Point
 import java.io.BufferedReader
 import java.io.File
 import java.util.*
@@ -60,4 +61,8 @@ class GuardPosition(var x: Int, var y: Int, var facing: Facing) {
 
 enum class Operator {
     PLUS, TIMES, CONCAT
+}
+
+class ListEntry(var char: Char, var area: Int, var perimeter: Int, val points: MutableList<Point>) {
+    //
 }
