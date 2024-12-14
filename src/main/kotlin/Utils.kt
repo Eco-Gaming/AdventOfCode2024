@@ -70,10 +70,8 @@ class ListEntry(var char: Char, var area: Int, var perimeter: Int, val points: M
 class Robot(var x: Int, var y: Int, val dX: Int, val dY: Int) {
 
     fun step(dimensionX: Int, dimensionY: Int, count: Int = 1) {
-        repeat(count) {
-            x = (x + dX).mod(dimensionX + 1)
-            y = (y + dY).mod(dimensionY + 1)
-        }
+        x = (x + dX*count).mod(dimensionX + 1)
+        y = (y + dY*count).mod(dimensionY + 1)
     }
 
     fun copy(): Robot {

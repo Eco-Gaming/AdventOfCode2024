@@ -28,7 +28,7 @@ class Day14 : Puzzle {
     override fun solvePartOne(): String {
         val map = getRobotMap(100)
         val quadrants = calculateQuadrants(map)
-        return quadrants.fold(1, { acc, i -> acc * i }).toString()
+        return quadrants.fold(1) { acc, i -> acc * i }.toString()
     }
 
     override fun solvePartTwo(): String {
