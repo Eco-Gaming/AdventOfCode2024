@@ -75,4 +75,8 @@ class Robot(var x: Int, var y: Int, val dX: Int, val dY: Int) {
             y = (y + dY).mod(dimensionY + 1)
         }
     }
+
+    fun copy(): Robot {
+        return Robot(x, y, dX, dY)
+    }
 }

@@ -4,6 +4,7 @@ import me.eco_gaming.Puzzle
 import me.eco_gaming.Robot
 import me.eco_gaming.readInputFromFile
 import java.awt.Point
+import java.util.stream.IntStream
 
 fun main() {
     val day14 = Day14()
@@ -31,11 +32,18 @@ class Day14 : Puzzle {
     }
 
     override fun solvePartTwo(): String {
-        TODO("Not yet implemented")
+        // manual searching for the win
+        IntStream.rangeClosed(0, 10000).parallel().forEach { i ->
+            val map = getRobotMap(i)
+            if (map.flatten().count { it > 1 } > 0) return@forEach
+            println(i)
+            printMap(map)
+        }
+        return ""
     }
 
     private fun getRobotMap(steps: Int, list: List<Robot> = robotList, mapDimensions: Point = dimensions): Array<Array<Int>> {
-        val listCopy = list.toList()
+        val listCopy = list.map { it.copy() }
         val map = Array(mapDimensions.x + 1) { Array(mapDimensions.y + 1) { 0 } }
         for (robot in listCopy) {
             robot.step(mapDimensions.x, mapDimensions.y, steps)
@@ -69,5 +77,19 @@ class Day14 : Puzzle {
             x < xMid && y > yMid -> 3
             else -> -1
         }
+    }
+
+    private fun printMap(map: Array<Array<Int>>) {
+        for (i in map.indices) {
+            for (j in map[i].indices) {
+                if (map[i][j] > 0) {
+                    print("#")
+                } else {
+                    print(".")
+                }
+            }
+            println()
+        }
+        println()
     }
 }
