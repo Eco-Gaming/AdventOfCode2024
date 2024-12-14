@@ -5,6 +5,8 @@ import me.eco_gaming.Robot
 import me.eco_gaming.readInputFromFile
 import java.awt.Point
 import java.util.stream.IntStream
+import kotlin.math.max
+import kotlin.math.roundToInt
 
 fun main() {
     val day14 = Day14()
@@ -32,14 +34,21 @@ class Day14 : Puzzle {
     }
 
     override fun solvePartTwo(): String {
-        // manual searching for the win
-        IntStream.rangeClosed(0, 10000).parallel().forEach { i ->
-            val map = getRobotMap(i)
-            if (map.flatten().count { it > 1 } > 0) return@forEach
-            println(i)
-            printMap(map)
-        }
-        return ""
+        // x values will be cyclic every 101 iterations (dimensions.x+1)
+        // y values will be cyclic every 103 iterations (dimensions.y+1)
+
+        // find x and y with the largest number of robots in center:
+        val (xSecond, ySecond) = getInterestingSeconds(max(dimensions.x+1, dimensions.y+1))
+
+        // apply the Chinese Remainder Theorem to find the lowest common time:
+        // t congruent xSecond mod dimensions.x+1
+        // t congruent ySecond mod dimensions.y+1
+        // <=> k*(dimensions.x+1) = (ySecond - xSecond) (mod dimensions.y+1)
+        val res = (ySecond - xSecond).mod(dimensions.y+1)
+        var k = 1
+        while ((k * (dimensions.x+1)).mod(dimensions.y+1) != res && k < dimensions.y+1) k++
+
+        return (xSecond + k * (dimensions.x+1)).toString()
     }
 
     private fun getRobotMap(steps: Int, list: List<Robot> = robotList, mapDimensions: Point = dimensions): Array<Array<Int>> {
@@ -79,17 +88,27 @@ class Day14 : Puzzle {
         }
     }
 
-    private fun printMap(map: Array<Array<Int>>) {
-        for (i in map.indices) {
-            for (j in map[i].indices) {
-                if (map[i][j] > 0) {
-                    print("#")
-                } else {
-                    print(".")
-                }
+    private fun getInterestingSeconds(steps: Int): Pair<Int, Int> {
+        // <seconds, number of robots in 50% center>
+        val xMap = HashMap<Int, Int>()
+        val yMap = HashMap<Int, Int>()
+
+        // bounds, middle 50%
+        val xRange = ((dimensions.x+1)*0.25).roundToInt()..((dimensions.x+1)*0.75).roundToInt()
+        val yRange = ((dimensions.y+1)*0.25).roundToInt()..((dimensions.y+1)*0.75).roundToInt()
+
+        val list = robotList.map { it.copy() }
+        IntStream.rangeClosed(1, steps).forEach { i ->
+            xMap[i] = 0
+            yMap[i] = 0
+            list.forEach { it.step(dimensions.x, dimensions.y, 1) }
+            list.forEach { entry ->
+                if (entry.x in xRange) xMap[i] = xMap[i]!! + 1
+                if (entry.y in yRange) yMap[i] = yMap[i]!! + 1
             }
-            println()
         }
-        println()
+
+        // key for the highest value for both maps
+        return Pair(xMap.maxBy { it.value }.key, yMap.maxBy { it.value }.key)
     }
 }
