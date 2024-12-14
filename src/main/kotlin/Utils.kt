@@ -66,3 +66,13 @@ enum class Operator {
 class ListEntry(var char: Char, var area: Int, var perimeter: Int, val points: MutableList<Point>) {
     //
 }
+
+class Robot(var x: Int, var y: Int, val dX: Int, val dY: Int) {
+
+    fun step(dimensionX: Int, dimensionY: Int, count: Int = 1) {
+        repeat(count) {
+            x = (x + dX).mod(dimensionX + 1)
+            y = (y + dY).mod(dimensionY + 1)
+        }
+    }
+}
