@@ -1,9 +1,7 @@
 package me.eco_gaming.puzzles
 
-import me.eco_gaming.Day15Robot
-import me.eco_gaming.Facing
-import me.eco_gaming.Puzzle
-import me.eco_gaming.readInputFromFile
+import me.eco_gaming.*
+import java.awt.Point
 
 fun main() {
     val day15 = Day15()
@@ -60,13 +58,14 @@ class Day15 : Puzzle {
     }
 
     override fun solvePartTwo(): String {
-        val newMatrix = translateMatrix(matrix)
+        val (newMatrix, boxList) = translateMatrix(matrix)
         val newRobot = robot.copy()
         newRobot.y *= 2
         for (movement in movements) {
-            newRobot.stepPartTwo(newMatrix, movement)
+            newRobot.stepPartTwo(newMatrix, boxList, movement)
         }
-        return ""
+        val sum = calculateGps(newMatrix, '[')
+        return sum.toString()
     }
 
     private fun calculateGps(matrix: List<List<Char>>, boxChar: Char = 'O'): Long {
@@ -81,19 +80,23 @@ class Day15 : Puzzle {
         return sum
     }
 
-    private fun translateMatrix(matrix: List<List<Char>>): List<MutableList<Char>> {
+    private fun translateMatrix(matrix: List<List<Char>>): Pair<List<MutableList<Char>>, MutableList<Box>> {
         val newMatrix = ArrayList<ArrayList<Char>>()
+        val boxList = ArrayList<Box>()
         for (i in matrix.indices) {
             val list = ArrayList<Char>()
             for (j in matrix[i].indices) {
                 when (matrix[i][j]) {
                     '#' -> list.addAll(listOf('#', '#'))
                     '.' -> list.addAll(listOf('.', '.'))
-                    'O' -> list.addAll(listOf('[', ']'))
+                    'O' -> {
+                        list.addAll(listOf('[', ']'))
+                        boxList.add(Box(Point(i, j*2), Point(i, j*2 + 1)))
+                    }
                 }
             }
             newMatrix.add(list)
         }
-        return newMatrix
+        return Pair(newMatrix, boxList)
     }
 }
