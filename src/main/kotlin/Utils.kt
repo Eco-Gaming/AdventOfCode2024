@@ -190,7 +190,7 @@ class Day15Robot(var x: Int, var y: Int) {
                         }
                     }
                     Facing.EAST -> {
-                        val yIndices = newY..emptyMatrix[x].lastIndexOf('.')
+                        val yIndices = newY..emptyMatrix[x].subList(newY, emptyMatrix[x].size).indexOf('#') - 1 + newY
                         val yBoxes = boxes.filter { it.getY().all { boxY -> boxY in yIndices } && it.getX() == x }
                         if (yIndices.isEmpty() || yBoxes.size * 2 >= yIndices.count()) {
                             // no more free space in this row
@@ -222,7 +222,7 @@ class Day15Robot(var x: Int, var y: Int) {
                         }
                     }
                     Facing.WEST -> {
-                        val yIndices = emptyMatrix[x].indexOf('.')..newY
+                        val yIndices = emptyMatrix[x].subList(0, newY).lastIndexOf('#')+1..newY
                         val yBoxes = boxes.filter { it.getY().all { boxY -> boxY in yIndices } && it.getX() == x }
                         if (-1 in yIndices || yBoxes.size * 2 >= yIndices.count()) {
                             // no more free space in this row
