@@ -59,12 +59,21 @@ class Day15 : Puzzle {
 
     override fun solvePartTwo(): String {
         val (newMatrix, boxList) = translateMatrix(matrix)
+        val emptyMatrix = newMatrix.map { list -> list.map {
+                if (it == '[' || it == ']') {
+                    '.'
+                } else {
+                    it
+                }
+            }
+        }
         val newRobot = robot.copy()
         newRobot.y *= 2
         for (movement in movements) {
-            newRobot.stepPartTwo(newMatrix, boxList, movement)
+            newRobot.stepPartTwo(emptyMatrix, boxList, movement)
         }
-        val sum = calculateGps(newMatrix, '[')
+        val newNewMatrix = populateMatrix(emptyMatrix, boxList)
+        val sum = calculateGps(newNewMatrix, '[')
         return sum.toString()
     }
 
@@ -98,5 +107,14 @@ class Day15 : Puzzle {
             newMatrix.add(list)
         }
         return Pair(newMatrix, boxList)
+    }
+
+    private fun populateMatrix(emptyMatrix: List<List<Char>>, boxList: List<Box>): List<List<Char>> {
+        val newMatrix = emptyMatrix.map { it.toMutableList() }.toList()
+        for (box in boxList) {
+            newMatrix[box.left.x][box.left.y] = '['
+            newMatrix[box.right.x][box.right.y] = ']'
+        }
+        return newMatrix
     }
 }

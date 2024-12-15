@@ -158,7 +158,7 @@ class Day15Robot(var x: Int, var y: Int) {
         }
     }
 
-    fun stepPartTwo(matrix: List<MutableList<Char>>, boxes: MutableList<Box>, direction: Facing) {
+    fun stepPartTwo(emptyMatrix: List<List<Char>>, boxes: MutableList<Box>, direction: Facing) {
         var newX = x
         var newY = y
         when (direction) {
@@ -168,25 +168,21 @@ class Day15Robot(var x: Int, var y: Int) {
             Facing.WEST -> newY--
         }
 
-        when (matrix[newX][newY]) {
-            '.' -> { // if the space is empty, we move into it
-                x = newX
-                y = newY
-            }
+        when (emptyMatrix[newX][newY]) {
             '#' -> {} // if we would move into a wall, we do nothing
-            '[', ']' -> { // if we move into a box, we attempt pushing it
+            '.' -> { // check if we would move into a box
+                val boxCheck = boxes.firstOrNull { it.getY().contains(newY) && it.getX() == newX }
+                if (boxCheck == null) {
+                    // move robot to newX and newY
+                    x = newX
+                    y = newY
+                    return
+                }
+
                 // check if there is space remaining in the row or column of the box
                 when (direction) {
                     Facing.NORTH -> {
                         val box = boxes.first { it.getY().contains(y) && it.getX() + 1 == x }
-                        val emptyMatrix = matrix.map { list -> list.map {
-                                if (it == '[' || it == ']') {
-                                    '.'
-                                } else {
-                                    it
-                                }
-                            }
-                        }
                         if (box.move(emptyMatrix, boxes, direction)) {
                             // move robot to newX and newY
                             x = newX
@@ -194,29 +190,31 @@ class Day15Robot(var x: Int, var y: Int) {
                         }
                     }
                     Facing.EAST -> {
-                        val contenders = matrix[x].subList(y + 1, matrix[x].size)
-                        val contender = contenders.indexOfFirst { it == '.' }
-                        val contenderLimit = contenders.indexOfFirst { it == '#' }
-                        if (contender != -1 && contenderLimit > contender) {
-                            // move box(es) and empty space east
-                            for (i in (newY..contender).reversed()) {
-                                matrix[x][i] = matrix[x][i - 1]
-                            }
-                            // move robot to newX and newY
-                            x = newX
-                            y = newY
+                        val yIndices = newY..emptyMatrix[x].lastIndexOf('.')
+                        val yBoxes = boxes.filter { it.getY().all { boxY -> boxY in yIndices } && it.getX() == x }
+                        if (yIndices.isEmpty() || yBoxes.size * 2 >= yIndices.count()) {
+                            // no more free space in this row
+                            return
                         }
+                        val moveBoxes = ArrayList<Box>()
+                        for (i in yIndices) {
+                            val box = boxes.firstOrNull { it.getY().contains(i) && it.getX() == x }
+                            if (box != null) {
+                                moveBoxes.add(box)
+                            } else {
+                                break
+                            }
+                        }
+                        for (box in moveBoxes.distinct()) {
+                            box.left.y++
+                            box.right.y++
+                        }
+                        // move robot to newX and newY
+                        x = newX
+                        y = newY
                     }
                     Facing.SOUTH -> {
                         val box = boxes.first { it.getY().contains(y) && it.getX() - 1 == x }
-                        val emptyMatrix = matrix.map { list -> list.map {
-                                if (it == '[' || it == ']') {
-                                    '.'
-                                } else {
-                                    it
-                                }
-                            }
-                        }
                         if (box.move(emptyMatrix, boxes, direction)) {
                             // move robot to newX and newY
                             x = newX
@@ -224,18 +222,28 @@ class Day15Robot(var x: Int, var y: Int) {
                         }
                     }
                     Facing.WEST -> {
-                        val contenders = matrix[x].subList(0, y)
-                        val contender = contenders.indexOfLast { it == '.' }
-                        val contenderLimit = contenders.indexOfLast { it == '#' }
-                        if (contender != -1 && contenderLimit < contender) {
-                            // move box(es) and empty space west
-                            for (i in contender..newY) {
-                                matrix[x][i] = matrix[x][i + 1]
-                            }
-                            // move robot to newX and newY
-                            x = newX
-                            y = newY
+                        val yIndices = emptyMatrix[x].indexOf('.')..newY
+                        val yBoxes = boxes.filter { it.getY().all { boxY -> boxY in yIndices } && it.getX() == x }
+                        if (-1 in yIndices || yBoxes.size * 2 >= yIndices.count()) {
+                            // no more free space in this row
+                            return
                         }
+                        val moveBoxes = ArrayList<Box>()
+                        for (i in yIndices.reversed()) {
+                            val box = boxes.firstOrNull { it.getY().contains(i) && it.getX() == x }
+                            if (box != null) {
+                                moveBoxes.add(box)
+                            } else {
+                                break
+                            }
+                        }
+                        for (box in moveBoxes.distinct()) {
+                            box.left.y--
+                            box.right.y--
+                        }
+                        // move robot to newX and newY
+                        x = newX
+                        y = newY
                     }
                 }
             }
@@ -261,6 +269,10 @@ class Box(var left: Point, var right: Point) {
     private fun canMove(emptyMatrix: List<List<Char>>, boxes: List<Box>, direction: Facing, path: MutableList<Box> = ArrayList()): Pair<Boolean, List<Box>> {
         when (direction) {
             Facing.NORTH -> {
+                if (emptyMatrix[left.x - 1][left.y] == '#' || emptyMatrix[right.x - 1][right.y] == '#') {
+                    return Pair(false, path)
+                }
+
                 // 0, 1 or 2 boxes above the current box
                 val contenders = boxes.filter { box -> box.getY().any { getY().contains(it) } && box.getX() + 1 == left.x }
 
@@ -269,10 +281,16 @@ class Box(var left: Point, var right: Point) {
                     Pair(true, path)
                 } else {
                     val outMap = contenders.map { it.canMove(emptyMatrix, boxes, direction, path) }
-                    Pair(outMap.all { it.first }, outMap.flatMap { it.second })
+                    val outList = outMap.flatMap { it.second }.toMutableList()
+                    outList.add(this)
+                    Pair(outMap.all { it.first }, outList)
                 }
             }
             Facing.SOUTH -> {
+                if (emptyMatrix[left.x + 1][left.y] == '#' || emptyMatrix[right.x + 1][right.y] == '#') {
+                    return Pair(false, path)
+                }
+
                 // 0, 1 or 2 boxes below the current box
                 val contenders = boxes.filter { box -> box.getY().any { getY().contains(it) } && box.getX() - 1 == left.x }
 
@@ -281,7 +299,9 @@ class Box(var left: Point, var right: Point) {
                     Pair(true, path)
                 } else {
                     val outMap = contenders.map { it.canMove(emptyMatrix, boxes, direction, path) }
-                    Pair(outMap.all { it.first }, outMap.flatMap { it.second })
+                    val outList = outMap.flatMap { it.second }.toMutableList()
+                    outList.add(this)
+                    Pair(outMap.all { it.first }, outList)
                 }
             }
             else -> throw IllegalArgumentException("Only NORTH and SOUTH directions are supported")
@@ -291,11 +311,22 @@ class Box(var left: Point, var right: Point) {
     fun move(emptyMatrix: List<List<Char>>, boxes: MutableList<Box>, direction: Facing): Boolean {
         val (canMove, path) = canMove(emptyMatrix, boxes, direction)
         if (canMove) {
-            for (box in path) {
+            for (box in path.distinct()) {
                 box.left.x += if (direction == Facing.NORTH) -1 else 1
                 box.right.x += if (direction == Facing.NORTH) -1 else 1
             }
         }
         return canMove
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return when (other) {
+            is Box -> this.left == other.left && this.right == other.right
+            else -> false
+        }
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hash(left, right)
     }
 }
