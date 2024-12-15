@@ -51,26 +51,49 @@ class Day15 : Puzzle {
 
     override fun solvePartOne(): String {
         val newMatrix = matrix.map { it.toMutableList() }.toList()
+        val newRobot = robot.copy()
         for (movement in movements) {
-            robot.step(newMatrix, movement)
+            newRobot.step(newMatrix, movement)
         }
         val sum = calculateGps(newMatrix)
         return sum.toString()
     }
 
     override fun solvePartTwo(): String {
-        TODO("Not yet implemented")
+        val newMatrix = translateMatrix(matrix)
+        val newRobot = robot.copy()
+        newRobot.y *= 2
+        for (movement in movements) {
+            newRobot.stepPartTwo(newMatrix, movement)
+        }
+        return ""
     }
 
-    private fun calculateGps(matrix: List<List<Char>>): Long {
+    private fun calculateGps(matrix: List<List<Char>>, boxChar: Char = 'O'): Long {
         var sum = 0L
         for (i in matrix.indices) {
             for (j in matrix[i].indices) {
-                if (matrix[i][j] == 'O') {
+                if (matrix[i][j] == boxChar) {
                     sum += 100*i + j
                 }
             }
         }
         return sum
+    }
+
+    private fun translateMatrix(matrix: List<List<Char>>): List<MutableList<Char>> {
+        val newMatrix = ArrayList<ArrayList<Char>>()
+        for (i in matrix.indices) {
+            val list = ArrayList<Char>()
+            for (j in matrix[i].indices) {
+                when (matrix[i][j]) {
+                    '#' -> list.addAll(listOf('#', '#'))
+                    '.' -> list.addAll(listOf('.', '.'))
+                    'O' -> list.addAll(listOf('[', ']'))
+                }
+            }
+            newMatrix.add(list)
+        }
+        return newMatrix
     }
 }
