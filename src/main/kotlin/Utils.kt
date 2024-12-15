@@ -78,3 +78,82 @@ class Robot(var x: Int, var y: Int, val dX: Int, val dY: Int) {
         return Robot(x, y, dX, dY)
     }
 }
+
+class Day15Robot(var x: Int, var y: Int) {
+
+    fun step(matrix: List<MutableList<Char>>, direction: Facing) {
+        var newX = x
+        var newY = y
+        when (direction) {
+            Facing.NORTH -> newX--
+            Facing.EAST -> newY++
+            Facing.SOUTH -> newX++
+            Facing.WEST -> newY--
+        }
+
+        when (matrix[newX][newY]) {
+            '.' -> { // if the space is empty, we move into it
+                x = newX
+                y = newY
+            }
+            '#' -> {} // if we would move into a wall, we do nothing
+            'O' -> { // if we move into a box, we attempt pushing it
+                // check if there is a dot "remaining" in the row or column of the box
+                when (direction) {
+                    Facing.NORTH -> {
+                        val contenders = List(matrix.size) { matrix[it][y] }.subList(0, x)
+                        val contender = contenders.indexOfLast { it == '.' }
+                        val contenderLimit = contenders.indexOfLast { it == '#' }
+                        if (contender != -1 && contenderLimit < contender) {
+                            // swap dot with box
+                            matrix[contender][y] = 'O'
+                            matrix[newX][newY] = '.'
+                            // move robot to newX and newY
+                            x = newX
+                            y = newY
+                        }
+                    }
+                    Facing.EAST -> {
+                        val contenders = matrix[x].subList(y + 1, matrix[x].size)
+                        val contender = contenders.indexOfFirst { it == '.' }
+                        val contenderLimit = contenders.indexOfFirst { it == '#' }
+                        if (contender != -1 && contenderLimit > contender) {
+                            // swap dot with box
+                            matrix[x][y + 1 + contender] = 'O'
+                            matrix[newX][newY] = '.'
+                            // move robot to newX and newY
+                            x = newX
+                            y = newY
+                        }
+                    }
+                    Facing.SOUTH -> {
+                        val contenders = List(matrix.size) { matrix[it][y] }.subList(x + 1, matrix.size)
+                        val contender = contenders.indexOfFirst { it == '.' }
+                        val contenderLimit = contenders.indexOfFirst { it == '#' }
+                        if (contender != -1 && contenderLimit > contender) {
+                            // swap dot with box
+                            matrix[x + 1 + contender][y] = 'O'
+                            matrix[newX][newY] = '.'
+                            // move robot to newX and newY
+                            x = newX
+                            y = newY
+                        }
+                    }
+                    Facing.WEST -> {
+                        val contenders = matrix[x].subList(0, y)
+                        val contender = contenders.indexOfLast { it == '.' }
+                        val contenderLimit = contenders.indexOfLast { it == '#' }
+                        if (contender != -1 && contenderLimit < contender) {
+                            // swap dot with box
+                            matrix[x][contender] = 'O'
+                            matrix[newX][newY] = '.'
+                            // move robot to newX and newY
+                            x = newX
+                            y = newY
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
