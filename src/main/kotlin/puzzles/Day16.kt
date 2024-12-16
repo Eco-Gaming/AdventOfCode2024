@@ -29,6 +29,8 @@ class Day16 : Puzzle {
 
     private val graph = Graph<Pair<Point, Facing>>()
 
+    private var bestDistance = Int.MAX_VALUE
+
     override fun readFile() {
         val input = readInputFromFile("src/main/resources/day16.txt")
         for ((i, line) in input.lines().withIndex()) {
@@ -123,11 +125,78 @@ class Day16 : Puzzle {
 
         // find the shortest path
         val shortestPair = pathList.minBy { it.first }
+        bestDistance = shortestPair.first.toInt()
 
         return shortestPair.first.toString()
     }
 
     override fun solvePartTwo(): String {
-        TODO("Not yet implemented")
+        // isn't really compatible with Dijkstra, so use breadth first search instead:
+        // List<distance, path>
+        val res = bfs(Pair(start, Facing.EAST), end)
+        val spots = res.flatMap { it.second }.distinctBy { Pair(it.first.x, it.first.y) }
+        return spots.size.toString()
+    }
+
+    // [!] this implementation only works, because we have the bestDistance from Dijkstra from part 1 [!]
+    private fun bfs(start: Pair<Point, Facing>, end: Point): List<Pair<Int, List<Pair<Point, Facing>>>> {
+        val res = ArrayList<Pair<Int, List<Pair<Point, Facing>>>>()
+
+        val queue = ArrayList<Pair<Int, MutableList<Pair<Point, Facing>>>>()
+        val seen = ArrayList<Pair<Point, Facing>>()
+
+        queue.add(Pair(0, mutableListOf(start)))
+
+        while (queue.isNotEmpty()) {
+            val (distance, path) = queue.removeFirst()
+            val last = path.last()
+            if (distance > bestDistance) continue
+
+            if (last.first == end) {
+                res.add(Pair(distance, path))
+                continue
+            }
+            seen.add(last)
+
+            // check forward
+            val nextForward = when (last.second) {
+                Facing.NORTH -> Pair(Point(last.first.x - 1, last.first.y), Facing.NORTH)
+                Facing.EAST -> Pair(Point(last.first.x, last.first.y + 1), Facing.EAST)
+                Facing.SOUTH -> Pair(Point(last.first.x + 1, last.first.y), Facing.SOUTH)
+                Facing.WEST -> Pair(Point(last.first.x, last.first.y - 1), Facing.WEST)
+            }
+            if (matrix[nextForward.first.x][nextForward.first.y] == '.' && nextForward !in seen) {
+                val newPath = path.toMutableList()
+                newPath.add(nextForward)
+                queue.add(Pair(distance + 1, newPath))
+            }
+
+            // check left
+            val nextLeft = when (last.second) {
+                Facing.NORTH -> Pair(Point(last.first.x, last.first.y - 1), Facing.WEST)
+                Facing.EAST -> Pair(Point(last.first.x - 1, last.first.y), Facing.NORTH)
+                Facing.SOUTH -> Pair(Point(last.first.x, last.first.y + 1), Facing.EAST)
+                Facing.WEST -> Pair(Point(last.first.x + 1, last.first.y), Facing.SOUTH)
+            }
+            if (matrix[nextLeft.first.x][nextLeft.first.y] == '.' && nextLeft !in seen) {
+                val newPath = path.toMutableList()
+                newPath.add(nextLeft)
+                queue.add(Pair(distance + 1001, newPath))
+            }
+
+            // check right
+            val nextRight = when (last.second) {
+                Facing.NORTH -> Pair(Point(last.first.x, last.first.y + 1), Facing.EAST)
+                Facing.EAST -> Pair(Point(last.first.x + 1, last.first.y), Facing.SOUTH)
+                Facing.SOUTH -> Pair(Point(last.first.x, last.first.y - 1), Facing.WEST)
+                Facing.WEST -> Pair(Point(last.first.x - 1, last.first.y), Facing.NORTH)
+            }
+            if (matrix[nextRight.first.x][nextRight.first.y] == '.' && nextRight !in seen) {
+                val newPath = path.toMutableList()
+                newPath.add(nextRight)
+                queue.add(Pair(distance + 1001, newPath))
+            }
+        }
+        return res
     }
 }
