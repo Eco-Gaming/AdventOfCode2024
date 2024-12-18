@@ -13,23 +13,24 @@ class Day18 : Puzzle {
 
     // y by x boolean array, currently all spots are safe
     private val matrix = Array(71) { Array(71) { true } }
+    private val byteList = mutableListOf<Point>()
     private val limit = 1024
 
     override fun readFile() {
         val input = readInputFromFile("src/main/resources/day18.txt")
         for ((i, line) in input.lines().withIndex()) {
-            if (i >= limit) break
             val x = line.split(",")[0]
             val y = line.split(",")[1]
-            matrix[y.toInt()][x.toInt()] = false
+            if (i < limit) matrix[y.toInt()][x.toInt()] = false
             // x and y are swapped, as per the task:
             // Where X is the distance from the left edge of your memory space
             // and Y is the distance from the top edge of your memory space.
+            byteList.add(Point(y.toInt(), x.toInt()))
         }
     }
 
     // adapted from Day16
-    private fun bfs(start: Point, end: Point): Int {
+    private fun bfs(start: Point, end: Point, inputMatrix: Array<Array<Boolean>> = matrix): Int {
         val queue = ArrayDeque<Pair<Int, Point>>()
         val seen = HashSet<Point>()
 
@@ -49,7 +50,7 @@ class Day18 : Puzzle {
                     Point(x, y + 1),
                     Point(x - 1, y),
                     Point(x, y - 1),
-                ).filter { it.x in matrix.indices && it.y in matrix[it.x].indices && matrix[it.x][it.y] }
+                ).filter { it.x in inputMatrix.indices && it.y in inputMatrix[it.x].indices && inputMatrix[it.x][it.y] }
                     .forEach { queue.add(Pair(dist + 1, it)) }
             }
         }
@@ -62,6 +63,35 @@ class Day18 : Puzzle {
     }
 
     override fun solvePartTwo(): String {
-        TODO("Not yet implemented")
+        val byteListRemaining = byteList.subList(limit, byteList.size)
+
+        // apply binary search:
+        var low = 0
+        var high = byteListRemaining.size - 1
+        var result: Point? = null
+        while (low <= high) {
+            val mid = low + ((high - low) / 2)
+            val newMatrix = populateMatrix(matrix, byteListRemaining.subList(0, mid + 1))
+            if (bfs(Point(0, 0), Point(70, 70), newMatrix) == 0) {
+                result = byteListRemaining[mid]
+                high = mid - 1
+            } else {
+                low = mid + 1
+            }
+        }
+
+        return if (result != null) {
+            "${result.y},${result.x}"
+        } else {
+            "No point found."
+        }
+    }
+
+    private fun populateMatrix(inputMatrix: Array<Array<Boolean>>, fallingBytes: List<Point>): Array<Array<Boolean>> {
+        val newMatrix = inputMatrix.map { it.copyOf() }.toTypedArray()
+        for (point in fallingBytes) {
+            newMatrix[point.x][point.y] = false
+        }
+        return newMatrix
     }
 }
