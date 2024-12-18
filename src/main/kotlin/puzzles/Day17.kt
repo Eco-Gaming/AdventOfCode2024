@@ -3,9 +3,6 @@ package me.eco_gaming.puzzles
 import me.eco_gaming.Puzzle
 import me.eco_gaming.longPow
 import me.eco_gaming.readInputFromFile
-import java.util.StringJoiner
-import java.util.stream.LongStream
-import kotlin.math.pow
 
 fun main() {
     val day17 = Day17()
@@ -35,12 +32,12 @@ class Day17 : Puzzle {
     }
 
     override fun solvePartOne(): String {
-        return run(registerA, registerB, registerC, inputList)
+        return run(registerA, registerB, registerC, inputList).joinToString(",")
     }
 
-    private fun run(pA: Long, pB: Long, pC: Long, operations: List<Int>, maxLength: Int = Int.MAX_VALUE): String {
-        val sj = StringJoiner(",")
-        val max = inputList.size - 2 // last possible opCode
+    private fun run(pA: Long, pB: Long, pC: Long, operations: List<Int>): List<Int> {
+        val list = mutableListOf<Int>()
+        val max = operations.size - 2 // last possible opCode
 
         // registers
         var a = pA
@@ -49,10 +46,8 @@ class Day17 : Puzzle {
 
         var i = 0
         while (i <= max) {
-            if (sj.toString().length > maxLength) return ""
-
-            val opCode = inputList[i]
-            val literalOperand = inputList[i + 1]
+            val opCode = operations[i]
+            val literalOperand = operations[i + 1]
             val comboOperand = when (literalOperand) {
                 0, 1, 2, 3 -> literalOperand
                 4 -> a
@@ -79,7 +74,7 @@ class Day17 : Puzzle {
                 4 -> b = b xor c
                 // out:
                 5 -> {
-                    sj.add((comboOperand.toDouble() % 8).toInt().toString())
+                    list.add((comboOperand.toDouble() % 8).toInt())
                 }
                 // bdv: division
                 6 -> b = (a / longPow(2, comboOperand.toLong()))
@@ -88,42 +83,53 @@ class Day17 : Puzzle {
             }
             i += 2
         }
-        return sj.toString()
+        return list
     }
 
+    // [!] this approach may not work with all inputs [!]
     override fun solvePartTwo(): String {
-        return "Not implemented."
+        val expectedOutput = inputList.toMutableList()
+        val registerList = ArrayList<String>()
 
-        // semi brute force, doesn't seem effective...
+        // find the lowest input for the required output, going from back to front
+        // implemented with a recursive function + depth first search,
+        // as there may be multiple input options for the same output
+        if (findCombination(expectedOutput, registerList)) {
+            return registerList.joinToString("").toLong(8).toString()
+        } else {
+            error("No valid combination found")
+        }
+    }
 
-        val expectedOutput = inputList.distinct().toMutableList()
-        val registerList = ArrayList<Long>()
-        val expectedLength = expectedOutput.joinToString(",").length
-
-        // find range around 8^16, where the whole algorithm would be run exactly 16 times (output length)
-        // x / 8^16 = 1 => would be exactly 1 too much
-        // x / 8^15 < 1 => would be  too little
-
-        // find an x in this range, where the first output is the expected output
-        // start: 35184372088832L
-        // end : 281474976710656L
-
-        // find the lowest input, for an output of expectedOutput.last()
-        var i = 0L
-        while (expectedOutput.isNotEmpty()) {
-            val output = run(i, registerB, registerC, inputList, 1)
-            if (output == expectedOutput.last().toString()) {
-                registerList.add(i)
-                expectedOutput.removeLast()
-                println("A: $i for output: $output")
-                i = 0
-            } else {
-                i++
-            }
+    private fun findCombination(expectedOutput: MutableList<Int>, registerList: MutableList<String>): Boolean {
+        if (expectedOutput.isEmpty()) {
+            return true
         }
 
-        println(registerList)
+        // every iteration only depends on the last bit of registerA as an octal number
+        // so we can slowly build up A, going from the back of the expected output to the front
+        val expected = expectedOutput.removeLast()
+        for (i in 0..7) {
+            val newA = buildA(registerList, i)
+            val output = run(newA, registerB, registerC, inputList)
+            if (output.isNotEmpty() && output[0] == expected) {
+                registerList.add(i.toString())
 
-        return ""
+                // depth first search
+                if (findCombination(expectedOutput, registerList)) {
+                    return true
+                }
+                registerList.removeAt(registerList.size - 1)
+            }
+        }
+        expectedOutput.add(expected)
+        return false
+    }
+
+    // builds the right value for registerA, as this is a lot easier to do with octal numbers
+    private fun buildA(registerList: List<String>, i: Int): Long {
+        val listCopy = registerList.toMutableList()
+        listCopy.add(i.toString())
+        return listCopy.joinToString("").toLong(8)
     }
 }
