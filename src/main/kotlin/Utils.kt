@@ -330,3 +330,13 @@ class Box(var left: Point, var right: Point) {
         return Objects.hash(left, right)
     }
 }
+
+fun longPow(base: Long, exponent: Long): Long {
+    return when (exponent) {
+        0L -> 1L
+        1L -> base
+        else -> {
+            base * longPow(base, exponent - 1)
+        }
+    }
+}
