@@ -22,6 +22,7 @@ fun main() {
         Day16(),
         Day17(),
         Day18(),
+        Day19(),
     )
 
     for (puzzle in puzzles) {
