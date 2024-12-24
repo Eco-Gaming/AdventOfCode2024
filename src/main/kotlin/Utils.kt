@@ -340,3 +340,23 @@ fun longPow(base: Long, exponent: Long): Long {
         }
     }
 }
+
+class LogicGate(
+    val input1: String,
+    val input2: String,
+    val output: String,
+    private val operator: (Boolean, Boolean) -> Boolean,
+    val operatorName: String,
+) {
+
+    fun evaluate(wireMap: MutableMap<String, Boolean>): Boolean {
+        val value1 = wireMap[input1]
+        val value2 = wireMap[input2]
+
+        if (value1 != null && value2 != null) {
+            wireMap[output] = operator(value1, value2)
+            return true
+        }
+        return false
+    }
+}
