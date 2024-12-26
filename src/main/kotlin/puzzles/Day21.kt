@@ -27,6 +27,11 @@ class Day21 : Puzzle {
     private val bfsCache = HashMap<Triple<Char, Char, List<List<Char>>>, List<Pair<Int, List<Char>>>>()
     private val neighborCache = HashMap<Pair<Char, List<List<Char>>>, List<Pair<Char, Char>>>()
 
+    private val dirpadPathCache = HashMap<Pair<List<Char>, Int>, List<Char>>()
+    private val dirpadCountCache = HashMap<Pair<List<Char>, Int>, Long>()
+
+    private val getPathCache = HashMap<Pair<Char, Char>, List<Char>>()
+
     override fun readFile() {
         val input = readInputFromFile("src/main/resources/day21.txt")
         codes.addAll(input.lines())
@@ -124,8 +129,8 @@ class Day21 : Puzzle {
             val min = newCol.minOf { it.first }
             newCol.filter { it.first == min }
                 .map { it.second }
-        }.map { column -> // prefer paths starting with '<' or 'v'
-            column.firstOrNull { it[0] == '<' || it[0] == 'v' } ?: column[0]
+        }.map { column -> // prefer paths starting with '<', then 'v'
+            column.firstOrNull { it[0] == '<' } ?: column.firstOrNull { it[0] == 'v' } ?: column[0]
         }.flatten()
     }
 
@@ -142,6 +147,10 @@ class Day21 : Puzzle {
     }
 
     private fun getDirpadPath(path: List<Char>, recursionLevel: Int = 1): List<Char> {
+        if (dirpadPathCache.containsKey(Pair(path, recursionLevel))) {
+            return dirpadPathCache[Pair(path, recursionLevel)]!!
+        }
+
         val possibilitiesRaw = ArrayList<List<List<Char>>>()
         var mutablePath = path
         for (j in 1..recursionLevel) {
@@ -153,12 +162,68 @@ class Day21 : Puzzle {
             possibilitiesRaw.clear()
         }
 
+        dirpadPathCache[Pair(path, recursionLevel)] = mutablePath
         return mutablePath
     }
 
+    private fun getDirpadPathLength(path: List<Char>, recursionLevel: Int = 1): Long {
+        if (recursionLevel == 0) {
+            return path.size.toLong()
+        }
+        if (path == listOf('A')) return 1L
+        if (dirpadCountCache.containsKey(Pair(path, recursionLevel))) return dirpadCountCache[Pair(path, recursionLevel)]!!
+
+        val moves = path.fold(mutableListOf(mutableListOf<Char>())) { acc, char ->
+            if (char == 'A') {
+                acc.add(mutableListOf())
+            } else {
+                acc.last().add(char)
+            }
+            acc
+        }.dropLastWhile { it.isEmpty() }
+        var sum = 0L
+        for (move in moves) {
+            val out = ArrayList<List<Char>>()
+            for (i in 0..move.size) {
+                val start = if (i == 0) 'A' else move[i - 1]
+                val end = if (i == move.size) 'A' else move[i]
+                val path2 = getPath(start, end, dirpad)
+                out.add(path2)
+            }
+            sum += getDirpadPathLength(out.flatten(), recursionLevel - 1)
+        }
+        dirpadCountCache[Pair(path, recursionLevel)] = sum
+        return sum
+    }
+
+    private fun getPath(start: Char, end: Char, matrix: List<List<Char>>): List<Char> {
+        if (getPathCache.containsKey(Pair(start, end))) return getPathCache[Pair(start, end)]!!
+
+        val possibilitiesRaw = ArrayList<List<List<Char>>>()
+        val pathList = bfs(start, end, matrix)
+        possibilitiesRaw.add(pathList.map { it.second.drop(1) + 'A' })
+        val path = possibilitiesToPath(possibilitiesRaw)
+
+        getPathCache[Pair(start, end)] = path
+        return path
+    }
+
     override fun solvePartTwo(): String {
-        // at a recursion level of 25, the path will probably be around 10^10 to 10^15 long
-        // => not feasible to calculate + leads to HeapSpace errors
-        return "Not implemented"
+        var sum = 0L
+        for (code in codes) {
+            val possibilitiesRaw = ArrayList<List<List<Char>>>()
+            for (i in code.indices) {
+                val pathList = bfs(if (i < 1) 'A' else code[i - 1], code[i], numpad)
+                possibilitiesRaw.add(pathList.map { it.second.drop(1) + 'A' })
+            }
+            val path = possibilitiesToPath(possibilitiesRaw)
+            val newSum = getDirpadPathLength(path, 25) * code.removeSuffix("A").toLong()
+            sum += newSum
+
+            // for debugging:
+            // println("code: $code, sum: $newSum")
+        }
+
+        return sum.toString()
     }
 }
